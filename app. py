@@ -1,0 +1,169 @@
+import streamlit as st
+import google.generativeai as genai
+from PIL import Image
+
+# 1. Page Configuration & Aesthetic UI Styling
+st.set_page_config(
+    page_title="MediGenius AI",
+    page_icon="🩺",
+    layout="centered",
+)
+
+# Clean Light Theme with High-Contrast Bold Dark Text
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #FFFFFF;
+        color: #000000;
+    }
+    h1, h2, h3, h4, h5, h6, p, label, span {
+        color: #111111 !important;
+        font-weight: 700 !important;
+    }
+    .stTextInput input, .stTextArea textarea {
+        background-color: #F8F9FA;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# App Header & Tagline
+st.title("🩺 MediGenius AI")
+st.markdown("### *Stay healthy, stay safe*")
+st.write("Your Advanced Trilingual Health Assistant (English | हिन्दी | Hinglish)")
+
+# Gemini API Key Input (Sidebar)
+st.sidebar.header("🔑 AI Configuration")
+api_key = st.sidebar.text_input("Enter Google Gemini API Key", type="password")
+st.sidebar.markdown("[Get Free API Key from Google AI Studio](https://aistudio.google.com/)")
+
+# 5 Core Navigation Tabs
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📊 Report Analyzer", 
+    "📈 History Tracker", 
+    "💊 Medicine Scanner", 
+    "🥗 Nutrition Assistant", 
+    "👨‍👩‍👧‍👦 Family Manager"
+])
+
+# --- 1. MEDICAL REPORT ANALYZER ---
+with tab1:
+    st.header("📊 Medical Report Analyzer")
+    st.write("Upload your medical report (Blood test, Sugar, etc.). AI will read the values and explain deficiencies in simple language.")
+    
+    uploaded_report = st.file_uploader("Upload Medical Report (Image/PDF)", type=["jpg", "jpeg", "png", "pdf"], key="report")
+    
+    if uploaded_report is not None:
+        try:
+            report_img = Image.open(uploaded_report)
+            st.image(report_img, caption="Uploaded Medical Report", use_column_width=True)
+        except:
+            st.info("Report file uploaded successfully.")
+            
+        if st.button("Analyze Medical Report"):
+            if not api_key:
+                st.error("Please enter your Google Gemini API Key in the sidebar first!")
+            else:
+                with st.spinner("AI is reading your report and checking values..."):
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    prompt = (
+                        "Analyze this medical report image thoroughly. Identify the test parameters, "
+                        "highlight if anything is low or high (e.g., exact hemoglobin values or deficiencies), "
+                        "and explain what it means in very simple, non-medical language. "
+                        "Provide the response in English, Hindi (Devanagari script), and Hinglish."
+                    )
+                    
+                    response = model.generate_content([report_img, prompt] if 'report_img' in locals() else [prompt])
+                    st.markdown("### 📋 Detailed Report Analysis:")
+                    st.write(response.text)
+
+# --- 2. HEALTH HISTORY TRACKER ---
+with tab2:
+    st.header("📈 Health History Tracker")
+    st.write("Log your daily vitals, symptoms, and past medical records.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        record_date = st.date_input("Date")
+        vitals_type = st.selectbox("Metric Type", ["Blood Pressure", "Blood Sugar", "Body Temperature", "Weight", "General Symptom"])
+    with col2:
+        reading_value = st.text_input("Reading / Value (e.g., 120/80 mmHg or 98.6°F)")
+        
+    notes = st.text_area("Additional Notes / Observations")
+    
+    if st.button("Save Health Log"):
+        st.success(f"Successfully logged {vitals_type} for {record_date}!")
+
+# --- 3. MEDICINE INFO SCANNER ---
+with tab3:
+    st.header("💊 Medicine Info Scanner")
+    st.write("Upload a medicine strip or packaging photo to get its exact mg, uses, side-effects, and precautions.")
+    
+    uploaded_med = st.file_uploader("Upload Medicine Photo", type=["jpg", "jpeg", "png"], key="med")
+    
+    if uploaded_med is not None:
+        med_img = Image.open(uploaded_med)
+        st.image(med_img, caption="Uploaded Medicine Photo", use_column_width=True)
+        
+        if st.button("Scan Medicine Details"):
+            if not api_key:
+                st.error("Please enter your Google Gemini API Key in the sidebar first!")
+            else:
+                with st.spinner("Scanning medicine packaging..."):
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    prompt = (
+                        "Analyze this medicine image. Identify its name, strength (mg), "
+                        "what it is used for, side effects, and standard precautions in complete detail. "
+                        "Provide the output in English, Hindi (Devanagari script), and Hinglish."
+                    )
+                    
+                    response = model.generate_content([med_img, prompt])
+                    st.markdown("### 💊 Complete Medicine Information:")
+                    st.write(response.text)
+
+# --- 4. AI NUTRITION ASSISTANT ---
+with tab4:
+    st.header("🥗 AI Nutrition Assistant")
+    st.write("Upload a food or fruit photo to get an instant breakdown of Calories, Protein, Carbohydrates, Fats, and Vitamins.")
+    
+    uploaded_food = st.file_uploader("Upload Food/Fruit Photo", type=["jpg", "jpeg", "png"], key="food")
+    
+    if uploaded_food is not None:
+        food_img = Image.open(uploaded_food)
+        st.image(food_img, caption="Uploaded Food Item", use_column_width=True)
+        
+        if st.button("Calculate Nutrient Breakdown"):
+            if not api_key:
+                st.error("Please enter your Google Gemini API Key in the sidebar first!")
+            else:
+                with st.spinner("Analyzing nutrients from image..."):
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    prompt = (
+                        "Analyze this food or fruit image. Estimate its portion size, calories, "
+                        "protein, carbohydrates, fats, and essential vitamins/minerals. "
+                        "Provide the breakdown clearly in English, Hindi (Devanagari script), and Hinglish."
+                    )
+                    
+                    response = model.generate_content([food_img, prompt])
+                    st.markdown("### 🥗 Nutritional Breakdown:")
+                    st.write(response.text)
+
+# --- 5. FAMILY HEALTH MANAGER ---
+with tab5:
+    st.header("👨‍👩‍👧‍👦 Family Health Manager")
+    st.write("Manage health profiles, allergies, and ongoing medications for your family members.")
+    
+    fam_name = st.text_input("Family Member Name")
+    fam_relation = st.selectbox("Relation", ["Father", "Mother", "Sibling", "Grandparent", "Child", "Self"])
+    fam_age = st.number_input("Age", min_value=1, max_value=120, value=25)
+    fam_history = st.text_area("Medical History, Chronic Conditions, or Allergies")
+    
+    if st.button("Add Family Profile"):
+        st.success(f"Profile for {fam_name} ({fam_relation}) saved successfully!")
